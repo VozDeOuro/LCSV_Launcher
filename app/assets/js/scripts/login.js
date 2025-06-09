@@ -45,13 +45,13 @@ function shakeError(element){
         element.classList.add('shake')
     }
 }
-
+/*
 /**
  * Validate that an email field is neither empty nor invalid.
  * 
  * @param {string} value The email value.
  */
-function validateEmail(value){
+/*function validateEmail(value){
     if(value){
         if(!basicEmail.test(value) && !validUsername.test(value)){
             showError(loginEmailError, Lang.queryJS('login.error.invalidValue'))
@@ -69,8 +69,21 @@ function validateEmail(value){
         showError(loginEmailError, Lang.queryJS('login.error.requiredValue'))
         loginDisabled(true)
     }
-}
+}*/
 
+function validateEmail(value){
+    if(value.endsWith("")){
+        loginEmailError.style.opacity = 0
+        lu = true
+            if(lp){
+                loginDisabled(false)
+            }
+        } else {
+            showError(loginEmailError, Lang.queryJS('login.error.invalidValue'))
+            loginDisabled(true)
+            lu = false
+        }
+    }
 /**
  * Validate that the password field is not empty.
  * 
@@ -187,7 +200,7 @@ loginButton.addEventListener('click', () => {
     // Show loading stuff.
     loginLoading(true)
 
-    AuthManager.addMojangAccount(loginUsername.value, loginPassword.value).then((value) => {
+    AuthManager.addAccount(loginUsername.value, loginPassword.value).then((value) => {
         updateSelectedAccount(value)
         loginButton.innerHTML = loginButton.innerHTML.replace(Lang.queryJS('login.loggingIn'), Lang.queryJS('login.success'))
         $('.circle-loader').toggleClass('load-complete')

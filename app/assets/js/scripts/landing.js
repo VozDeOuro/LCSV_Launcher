@@ -147,6 +147,12 @@ function updateSelectedAccount(authUser){
     if(authUser != null){
         if(authUser.displayName != null){
             username = authUser.displayName
+            if(authUser.uuid == "a48ec2c0-4a04-41d2-8e1a-a29cc54d9743"){// voz original
+                username = "👑" + authUser.displayName;
+            }
+            if(authUser.uuid == "7bc9156b-df34-38a6-8636-965ba3b5d065"){// voz pirata
+                username = "👑" + authUser.displayName;
+            }   
         }
         if(authUser.uuid != null){
             document.getElementById('avatarContainer').style.backgroundImage = `url('https://mc-heads.net/body/${authUser.uuid}/right')`
