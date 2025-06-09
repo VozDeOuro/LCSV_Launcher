@@ -50,7 +50,7 @@ if(!isDev){
                 
                 if(process.platform === 'darwin'){
                     //VOZ Update the update link here 
-                    info.darwindownload = `https://github.com/vozdeouro/LCSVLauncher/releases/download/v${info.version}/Helios-Launcher-setup-${info.version}${process.arch === 'arm64' ? '-arm64' : '-x64'}.dmg`
+                    info.darwindownload = `https://github.com/vozdeouro/LCSVLauncher/releases/download/v${info.version}/LCSV-Launcher-setup-${info.version}${process.arch === 'arm64' ? '-arm64' : '-x64'}.dmg`
                     showUpdateUI(info)
                 }
                 

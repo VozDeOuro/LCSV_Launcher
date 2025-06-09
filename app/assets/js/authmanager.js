@@ -139,6 +139,12 @@ function mojangErrorDisplayable(errorCode) {
  * @param {string} password The account password.
  * @returns {Promise.<Object>} Promise which resolves the resolved authenticated account object.
  */
+
+
+
+
+
+
 exports.addMojangAccount = async function(username, password) {
     try {
         const response = await MojangRestAPI.authenticate(username, password, ConfigManager.getClientToken())
