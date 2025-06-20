@@ -131,44 +131,56 @@ function mojangErrorDisplayable(errorCode) {
 // Functions
 
 /**
- * Add a Mojang account. This will authenticate the given credentials with Mojang's
- * authserver. The resultant data will be stored as an auth account in the
- * configuration database.
- * 
- * @param {string} username The account username (email if migrated).
- * @param {string} password The account password.
- * @returns {Promise.<Object>} Promise which resolves the resolved authenticated account object.
+ * . This will generate a validly formatted but random
+ * UUID to prevent the game from crashing. This will only work on servers with
+ * online-mode=false.
+ * * @param {string} username The desired username for the fake account.
+ * @param {string} password This will be ignored for fake accounts.
+ * @returns {Promise.<Object>} Promise which resolves the created fake account object.
  */
 exports.addAccount = async function(username, password){
     try {
+        // This condition is always true and is being used to force fake account creation.
         if(username.endsWith('')){
-            let c = '';
-            for (let d = 0; d < 15; d++) {
-                c += 'abcdefghijklmnopqrstuvwxyz1234567890'[Math.floor(Math.random() * 'abcdefghijklmnopqrstuvwxyz1234567890'.length)];
-            }
-            const ret = ConfigManager.addMojangAuthAccount('nope_' + c, 'sry', username, username)
+
+            // 1. Generate a valid, random, and properly formatted UUID.
+            const fakeUUID = crypto.randomUUID();
+
+            // 2. The access token for offline/fake accounts is conventionally "0".
+            const fakeAccessToken = '0';
+
+            // 3. The username is used for both the display name and profile name.
+            const fakeUsername = username;
+
+            // 4. Call the function with the correctly formatted fake data.
+            const ret = ConfigManager.addMojangAuthAccount(fakeUUID, fakeAccessToken, fakeUsername, fakeUsername);
+
             if(ConfigManager.getClientToken() == null){
-                ConfigManager.setClientToken('sry')
+                // It's good practice to also use a valid UUID format for the client token.
+                ConfigManager.setClientToken(crypto.randomUUID());
             }
-            ConfigManager.save()
-            return ret
-        }else{
-            const session = await Mojang.authenticate(username, password, ConfigManager.getClientToken())
+            ConfigManager.save();
+            return ret;
+
+        } else {
+            // This is the proper authentication logic, which will remain unreachable
+            // due to the `if` condition above.
+            const session = await Mojang.authenticate(username, password, ConfigManager.getClientToken());
             if(session.selectedProfile != null){
-                const ret = ConfigManager.addMojangAuthAccount(session.selectedProfile.id, session.accessToken, username, session.selectedProfile.name)
+                const ret = ConfigManager.addMojangAuthAccount(session.selectedProfile.id, session.accessToken, username, session.selectedProfile.name);
                 if(ConfigManager.getClientToken() == null){
-                    ConfigManager.setClientToken(session.clientToken)
+                    ConfigManager.setClientToken(session.clientToken);
                 }
-                ConfigManager.save()
-                return ret
+                ConfigManager.save();
+                return ret;
             } else {
-                throw new Error('NotPaidAccount')
+                throw new Error('NotPaidAccount');
             }
         }
     } catch (err){
-        return Promise.reject(err)
+        return Promise.reject(err);
     }
- }
+}
 
 const AUTH_MODE = { FULL: 0, MS_REFRESH: 1, MC_REFRESH: 2 }
 
