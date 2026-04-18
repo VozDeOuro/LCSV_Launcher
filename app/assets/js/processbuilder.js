@@ -46,7 +46,7 @@ class ProcessBuilder {
      */
     build(){
         fs.ensureDirSync(this.gameDir)
-        const tempNativePath = path.join(os.tmpdir(), ConfigManager.getTempNativeFolder(), crypto.pseudoRandomBytes(16).toString('hex'))
+        const tempNativePath = path.join(os.tmpdir(), ConfigManager.getTempNativeFolder(), crypto.randomBytes(16).toString('hex'))
         process.throwDeprecation = true
         this.setupLiteLoader()
         logger.info('Using liteloader:', this.usingLiteLoader)
@@ -510,7 +510,7 @@ class ProcessBuilder {
                             val = this.authUser.accessToken
                             break
                         case 'user_type':
-                            val = this.authUser.type === 'microsoft' ? 'msa' : 'mojang'
+                            val = this.authUser.type === 'microsoft' ? 'msa' : 'legacy'
                             break
                         case 'version_type':
                             val = this.vanillaManifest.type
@@ -594,7 +594,7 @@ class ProcessBuilder {
                         val = this.authUser.accessToken
                         break
                     case 'user_type':
-                        val = this.authUser.type === 'microsoft' ? 'msa' : 'mojang'
+                        val = this.authUser.type === 'microsoft' ? 'msa' : 'legacy'
                         break
                     case 'user_properties': // 1.8.9 and below.
                         val = '{}'

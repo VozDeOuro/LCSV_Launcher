@@ -335,6 +335,13 @@ exports.removeMicrosoftAccount = async function(uuid){
  */
 async function validateSelectedMojangAccount(){
     const current = ConfigManager.getSelectedAccount()
+
+    // Cracked/offline account - access token is '0', no validation needed.
+    if(current.accessToken === '0') {
+        log.info('Offline/cracked account detected, skipping token validation.')
+        return true
+    }
+
     const response = await MojangRestAPI.validate(current.accessToken, ConfigManager.getClientToken())
 
     if(response.responseStatus === RestResponseStatus.SUCCESS) {
@@ -357,7 +364,10 @@ async function validateSelectedMojangAccount(){
             return true
         }
     }
-    
+
+    // If the auth server is unreachable, do not invalidate the account.
+    log.warn('Unable to reach Mojang auth server, assuming token is still valid.')
+    return true
 }
 
 /**
