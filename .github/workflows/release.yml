@@ -14,6 +14,8 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -26,6 +28,8 @@ jobs:
 
   build-linux:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -33,17 +37,5 @@ jobs:
           node-version: '20'
       - run: npm ci
       - run: npm run dist -- -l --publish always
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  build-mac:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: npm ci
-      - run: npm run dist -- -m --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
