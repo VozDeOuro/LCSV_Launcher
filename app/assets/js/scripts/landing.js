@@ -280,6 +280,62 @@ let mojangStatusListener = setInterval(() => refreshMojangStatuses(true), 60*60*
 // Set refresh rate to once every 5 minutes.
 let serverStatusListener = setInterval(() => refreshServerStatus(true), 300000)
 
+/* Upload Logs to mclo.gs */
+
+const uploadLogsButton = document.getElementById('uploadLogsButton')
+const uploadLogsStatus = document.getElementById('uploadLogsStatus')
+
+uploadLogsButton.addEventListener('click', async () => {
+    uploadLogsButton.disabled = true
+    uploadLogsStatus.style.color = '#fff'
+    uploadLogsStatus.innerHTML = Lang.queryJS('landing.uploadLogs.uploading')
+
+    try {
+        const fs = require('fs-extra')
+        const logPath = path.join(ConfigManager.getInstanceDirectory(),
+            ConfigManager.getSelectedServer(), 'logs', 'latest.log')
+
+        if(!fs.existsSync(logPath)) {
+            uploadLogsStatus.style.color = '#e74c3c'
+            uploadLogsStatus.innerHTML = Lang.queryJS('landing.uploadLogs.noLog')
+            uploadLogsButton.disabled = false
+            return
+        }
+
+        const logContent = fs.readFileSync(logPath, 'utf8')
+
+        const response = await fetch('https://api.mclo.gs/1/log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'content=' + encodeURIComponent(logContent)
+        })
+
+        const data = await response.json()
+
+        if(data.success && data.url) {
+            const { clipboard } = require('electron')
+            clipboard.writeText(data.url)
+            uploadLogsStatus.style.color = '#2ecc71'
+            uploadLogsStatus.innerHTML = `${Lang.queryJS('landing.uploadLogs.success')} <a id="uploadLogsLink">${data.url}</a>`
+            const uploadLogsLink = document.getElementById('uploadLogsLink')
+            uploadLogsLink.addEventListener('click', (e) => {
+                e.preventDefault()
+                clipboard.writeText(data.url)
+            })
+        } else {
+            uploadLogsStatus.style.color = '#e74c3c'
+            uploadLogsStatus.innerHTML = data.error || Lang.queryJS('landing.uploadLogs.failed')
+        }
+    } catch(err) {
+        loggerLanding.error('Error uploading logs', err)
+        uploadLogsStatus.style.color = '#e74c3c'
+        uploadLogsStatus.innerHTML = Lang.queryJS('landing.uploadLogs.failed')
+    }
+
+    uploadLogsButton.disabled = false
+    setTimeout(() => { uploadLogsStatus.innerHTML = '' }, 30000)
+})
+
 /**
  * Shows an error overlay, toggles off the launch area.
  * 

@@ -46,6 +46,11 @@ linux:
   category: 'Game'
 
 
+publish:
+  provider: github
+  owner: VozDeOuro
+  repo: LCSV_Launcher
+
 directories:
   buildResources: 'build'
   output: 'dist'

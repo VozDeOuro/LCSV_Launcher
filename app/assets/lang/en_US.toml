@@ -9,6 +9,7 @@ mojangStatus = "MOJANG STATUS"
 mojangStatusTooltipTitle = "Services"
 mojangStatusNETitle = "Non&nbsp;Essential"
 newsButton = "NEWS"
+uploadLogsButton = "UPLOAD LOGS"
 launchButton = "PLAY"
 launchButtonPlaceholder = "&#8226; No Server Selected"
 launchDetails = "Please wait.."
@@ -214,6 +215,12 @@ checking = "Checking for News"
 loading = "Loading game.."
 joining = "Sailing to Westeros!"
 joined = "Exploring the Realm!"
+
+[js.landing.uploadLogs]
+uploading = "Uploading.."
+success = "Copied to clipboard!"
+failed = "Upload failed."
+noLog = "No log found."
 
 [js.overlay]
 dismiss = "Dismiss"

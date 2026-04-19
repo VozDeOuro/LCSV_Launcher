@@ -104,6 +104,7 @@
                         <span class="bot_label"><%- lang('landing.mojangStatus') %></span>
                         <span id="mojang_status_icon">&#8226;</span>
                         <div id="mojangStatusTooltip">
+
                             <div id="mojangStatusTooltipTitle"><%- lang('landing.mojangStatusTooltipTitle') %></div>
                             <div id="mojangStatusEssentialContainer">
                                 <!-- Essential Mojang services are populated here. -->
@@ -117,6 +118,11 @@
                                 <!-- Non Essential Mojang services are populated here. -->
                             </div>
                         </div>
+                    </div>
+                    <div class="bot_divider"></div>
+                    <div id="uploadLogsWrapper">
+                        <button id="uploadLogsButton" class="bot_label"><%- lang('landing.uploadLogsButton') %></button>
+                        <span id="uploadLogsStatus"></span>
                     </div>
                 </div>
             </div>
