@@ -10,7 +10,7 @@ const isDev                             = require('./app/assets/js/isdev')
 const path                              = require('path')
 const semver                            = require('semver')
 const { pathToFileURL }                 = require('url')
-const { AZURE_CLIENT_ID, MSFT_OPCODE, MSFT_REPLY_TYPE, MSFT_ERROR, SHELL_OPCODE } = require('./app/assets/js/ipcconstants')
+const { AZURE_CLIENT_ID, MSFT_OPCODE, MSFT_REPLY_TYPE, MSFT_ERROR, SHELL_OPCODE, CONSOLE_OPCODE } = require('./app/assets/js/ipcconstants')
 const LangLoader                        = require('./app/assets/js/langloader')
 
 // Setup Lang
@@ -144,25 +144,40 @@ ipcMain.on(MSFT_OPCODE.OPEN_LOGIN, (ipcEvent, ...arguments_) => {
     })
 
     msftAuthWindow.webContents.on('did-navigate', (_, uri) => {
-        if (uri.startsWith(REDIRECT_URI_PREFIX)) {
-            let queries = uri.substring(REDIRECT_URI_PREFIX.length).split('#', 1).toString().split('&')
-            let queryMap = {}
+        if (msftAuthSuccess || !uri.startsWith(REDIRECT_URI_PREFIX)) {
+            return
+        }
 
-            queries.forEach(query => {
-                const [name, value] = query.split('=')
-                queryMap[name] = decodeURI(value)
-            })
+        try {
+            const parsed = new URL(uri)
+            const queryMap = {}
+            for (const [name, value] of parsed.searchParams.entries()) {
+                queryMap[name] = value
+            }
 
-            ipcEvent.reply(MSFT_OPCODE.REPLY_LOGIN, MSFT_REPLY_TYPE.SUCCESS, queryMap, msftAuthViewSuccess)
+            if(queryMap.code == null){
+                ipcEvent.reply(MSFT_OPCODE.REPLY_LOGIN, MSFT_REPLY_TYPE.ERROR, MSFT_ERROR.NOT_FINISHED, msftAuthViewOnClose)
+                return
+            }
 
             msftAuthSuccess = true
+            ipcEvent.reply(MSFT_OPCODE.REPLY_LOGIN, MSFT_REPLY_TYPE.SUCCESS, queryMap, msftAuthViewSuccess)
+
             msftAuthWindow.close()
             msftAuthWindow = null
+        } catch(err) {
+            ipcEvent.reply(MSFT_OPCODE.REPLY_LOGIN, MSFT_REPLY_TYPE.ERROR, MSFT_ERROR.NOT_FINISHED, msftAuthViewOnClose)
         }
     })
 
     msftAuthWindow.removeMenu()
-    msftAuthWindow.loadURL(`https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?prompt=select_account&client_id=${AZURE_CLIENT_ID}&response_type=code&scope=XboxLive.signin%20offline_access&redirect_uri=https://login.microsoftonline.com/common/oauth2/nativeclient`)
+    const authUrl = new URL('https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize')
+    authUrl.searchParams.set('prompt', 'select_account')
+    authUrl.searchParams.set('client_id', AZURE_CLIENT_ID)
+    authUrl.searchParams.set('response_type', 'code')
+    authUrl.searchParams.set('scope', 'XboxLive.signin offline_access')
+    authUrl.searchParams.set('redirect_uri', 'https://login.microsoftonline.com/common/oauth2/nativeclient')
+    msftAuthWindow.loadURL(authUrl.toString())
 })
 
 // Microsoft Auth Logout
@@ -223,6 +238,8 @@ ipcMain.on(MSFT_OPCODE.OPEN_LOGOUT, (ipcEvent, uuid, isLastAccount) => {
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let win
+let consoleWindow
+let consoleSessionMeta = null
 
 function createWindow() {
 
@@ -239,6 +256,11 @@ function createWindow() {
         backgroundColor: '#171614'
     })
     remoteMain.enable(win.webContents)
+
+    // Prevent unexpected window.open / new-window attacks.
+    win.webContents.setWindowOpenHandler(() => {
+        return { action: 'deny' }
+    })
 
     const data = {
         bkid: Math.floor((Math.random() * fs.readdirSync(path.join(__dirname, 'app', 'assets', 'images', 'backgrounds')).length)),
@@ -357,5 +379,94 @@ app.on('activate', () => {
     // dock icon is clicked and there are no other windows open.
     if (win === null) {
         createWindow()
+    }
+})
+
+// --- Console Window ---
+
+function createConsoleWindow(sessionMeta) {
+    const title = `${sessionMeta.serverName} Console`
+    
+    if (consoleWindow && !consoleWindow.isDestroyed()) {
+        consoleWindow.focus()
+        consoleWindow.webContents.send(CONSOLE_OPCODE.SESSION_STARTED, sessionMeta)
+        return
+    }
+
+    consoleWindow = new BrowserWindow({
+        width: 900,
+        height: 600,
+        title,
+        icon: getPlatformIcon('SealCircle'),
+        frame: true,
+        webPreferences: {
+            preload: path.join(__dirname, 'app', 'assets', 'js', 'preloader.js'),
+            nodeIntegration: true,
+            contextIsolation: false
+        },
+        backgroundColor: '#171614'
+    })
+
+    remoteMain.enable(consoleWindow.webContents)
+
+    consoleWindow.loadURL(pathToFileURL(path.join(__dirname, 'app', 'console.ejs')).toString())
+    
+    consoleWindow.webContents.on('did-finish-load', () => {
+        consoleWindow.webContents.send(CONSOLE_OPCODE.SESSION_STARTED, sessionMeta)
+    })
+
+    consoleWindow.on('closed', () => {
+        consoleWindow = null
+        consoleSessionMeta = null
+    })
+
+    consoleWindow.setMenuBarVisibility(false)
+}
+
+ipcMain.on(CONSOLE_OPCODE.OPEN, (event, sessionMeta) => {
+    consoleSessionMeta = sessionMeta
+    createConsoleWindow(sessionMeta)
+})
+
+ipcMain.on(CONSOLE_OPCODE.LOG_LINE, (event, logEntry) => {
+    if (consoleWindow && !consoleWindow.isDestroyed()) {
+        consoleWindow.webContents.send(CONSOLE_OPCODE.LOG_LINE, logEntry)
+    }
+})
+
+ipcMain.on(CONSOLE_OPCODE.SESSION_ENDED, (event, endData) => {
+    if (consoleWindow && !consoleWindow.isDestroyed()) {
+        consoleWindow.webContents.send(CONSOLE_OPCODE.SESSION_ENDED, endData)
+    }
+})
+
+ipcMain.on(CONSOLE_OPCODE.OPEN_LOG_FILE, (event, filePath) => {
+    shell.openPath(filePath)
+})
+
+ipcMain.handle(CONSOLE_OPCODE.UPLOAD_LOG, async (event, { content, sessionMeta }) => {
+    try {
+        const got = require('got')
+        const response = await got.post('https://api.mclo.gs/1/log', {
+            json: {
+                content,
+                source: 'LCSV Launcher',
+                metadata: [
+                    { key: 'launcher_version', value: app.getVersion(), label: 'Launcher Version', visible: true },
+                    { key: 'server_id', value: sessionMeta.serverId, label: 'Server ID', visible: true }
+                ]
+            },
+            responseType: 'json',
+            timeout: { request: 15000 }
+        })
+        return {
+            success: true,
+            ...response.body
+        }
+    } catch (err) {
+        return {
+            success: false,
+            error: err.message || 'Upload failed'
+        }
     }
 })

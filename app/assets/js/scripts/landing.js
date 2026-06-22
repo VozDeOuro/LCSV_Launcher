@@ -30,6 +30,8 @@ const {
 // Internal Requirements
 const DiscordWrapper          = require('./assets/js/discordwrapper')
 const ProcessBuilder          = require('./assets/js/processbuilder')
+const ConsoleManager          = require('./assets/js/consolemanager')
+const { CONSOLE_OPCODE }      = require('./assets/js/ipcconstants')
 
 // Launch Elements
 const launch_content          = document.getElementById('launch_content')
@@ -155,7 +157,10 @@ function updateSelectedAccount(authUser){
             }   
         }
         if(authUser.uuid != null){
-            document.getElementById('avatarContainer').style.backgroundImage = `url('https://mc-heads.net/body/${authUser.uuid}/right')`
+            const avatarIdentifier = (authUser.offline === true && authUser.displayName)
+                ? encodeURIComponent(authUser.displayName)
+                : authUser.uuid
+            document.getElementById('avatarContainer').style.backgroundImage = `url('https://mc-heads.net/body/${avatarIdentifier}/right')`
         }
     }
     user_text.innerHTML = username
@@ -272,69 +277,43 @@ const refreshServerStatus = async (fade = false) => {
     
 }
 
+function refreshDistributionStatus(){
+    const status = typeof DistroAPI.getRemoteLoadStatus === 'function' ? DistroAPI.getRemoteLoadStatus() : 'unknown'
+    const btn = document.getElementById('distributionStatusButton')
+    const divider = document.getElementById('distributionStatusDivider')
+
+    if(btn == null || divider == null){
+        return
+    }
+
+    if(status === 'offline'){
+        btn.style.display = 'inline'
+        divider.style.display = 'block'
+        btn.innerHTML = 'UPSTREAM OFFLINE'
+        btn.title = 'Using cached modpack data. Package updates are skipped until distribution server is back online.'
+        btn.onclick = () => {
+            setOverlayContent(
+                'Upstream Offline',
+                'The modpack distribution server is not reachable. The launcher is using cached modpack data so you can keep playing. Package updates will be checked again next startup.',
+                'Okay'
+            )
+            setOverlayHandler(() => toggleOverlay(false))
+            toggleOverlay(true)
+        }
+    } else {
+        btn.style.display = 'none'
+        divider.style.display = 'none'
+    }
+}
+
 refreshMojangStatuses()
+refreshDistributionStatus()
 // Server Status is refreshed in uibinder.js on distributionIndexDone.
 
 // Refresh statuses every hour. The status page itself refreshes every day so...
 let mojangStatusListener = setInterval(() => refreshMojangStatuses(true), 60*60*1000)
 // Set refresh rate to once every 5 minutes.
 let serverStatusListener = setInterval(() => refreshServerStatus(true), 300000)
-
-/* Upload Logs to mclo.gs */
-
-const uploadLogsButton = document.getElementById('uploadLogsButton')
-const uploadLogsStatus = document.getElementById('uploadLogsStatus')
-
-uploadLogsButton.addEventListener('click', async () => {
-    uploadLogsButton.disabled = true
-    uploadLogsStatus.style.color = '#fff'
-    uploadLogsStatus.innerHTML = Lang.queryJS('landing.uploadLogs.uploading')
-
-    try {
-        const fs = require('fs-extra')
-        const logPath = path.join(ConfigManager.getInstanceDirectory(),
-            ConfigManager.getSelectedServer(), 'logs', 'latest.log')
-
-        if(!fs.existsSync(logPath)) {
-            uploadLogsStatus.style.color = '#e74c3c'
-            uploadLogsStatus.innerHTML = Lang.queryJS('landing.uploadLogs.noLog')
-            uploadLogsButton.disabled = false
-            return
-        }
-
-        const logContent = fs.readFileSync(logPath, 'utf8')
-
-        const response = await fetch('https://api.mclo.gs/1/log', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: 'content=' + encodeURIComponent(logContent)
-        })
-
-        const data = await response.json()
-
-        if(data.success && data.url) {
-            const { clipboard } = require('electron')
-            clipboard.writeText(data.url)
-            uploadLogsStatus.style.color = '#2ecc71'
-            uploadLogsStatus.innerHTML = `${Lang.queryJS('landing.uploadLogs.success')} <a id="uploadLogsLink">${data.url}</a>`
-            const uploadLogsLink = document.getElementById('uploadLogsLink')
-            uploadLogsLink.addEventListener('click', (e) => {
-                e.preventDefault()
-                clipboard.writeText(data.url)
-            })
-        } else {
-            uploadLogsStatus.style.color = '#e74c3c'
-            uploadLogsStatus.innerHTML = data.error || Lang.queryJS('landing.uploadLogs.failed')
-        }
-    } catch(err) {
-        loggerLanding.error('Error uploading logs', err)
-        uploadLogsStatus.style.color = '#e74c3c'
-        uploadLogsStatus.innerHTML = Lang.queryJS('landing.uploadLogs.failed')
-    }
-
-    uploadLogsButton.disabled = false
-    setTimeout(() => { uploadLogsStatus.innerHTML = '' }, 30000)
-})
 
 /**
  * Shows an error overlay, toggles off the launch area.
@@ -521,6 +500,7 @@ async function dlAsync(login = true) {
     try {
         distro = await DistroAPI.refreshDistributionOrFallback()
         onDistroRefresh(distro)
+        refreshDistributionStatus()
     } catch(err) {
         loggerLaunchSuite.error('Unable to refresh distribution index.', err)
         showLaunchFailure(Lang.queryJS('landing.dlAsync.fatalError'), Lang.queryJS('landing.dlAsync.unableToLoadDistributionIndex'))
@@ -667,14 +647,44 @@ async function dlAsync(login = true) {
         }
 
         try {
-            // Build Minecraft process.
-            proc = pb.build()
+            // Initialize console session
+            const consoleMgr = new ConsoleManager(ConfigManager.getLauncherDirectory())
+            const sessionMeta = consoleMgr.startSession(serv.rawServer.id, serv.rawServer.name)
+            
+            // Open console window if enabled in settings
+            if(ConfigManager.getConsoleOpenOnLaunch?.() !== false){
+                ipcRenderer.send(CONSOLE_OPCODE.OPEN, sessionMeta)
+            }
+            
+            // Build Minecraft process with log callbacks
+            proc = pb.build({
+                onLogLine: ({ stream, level, line }) => {
+                    consoleMgr.pushLine(stream, level, line)
+                    ipcRenderer.send(CONSOLE_OPCODE.LOG_LINE, {
+                        ...sessionMeta,
+                        stream,
+                        level,
+                        line
+                    })
+                },
+                onClose: (code, signal) => {
+                    consoleMgr.endSession(code, signal)
+                    ipcRenderer.send(CONSOLE_OPCODE.SESSION_ENDED, {
+                        ...sessionMeta,
+                        exitCode: code,
+                        signal: signal || null
+                    })
+                }
+            })
 
             // Bind listeners to stdout.
             proc.stdout.on('data', tempListener)
             proc.stderr.on('data', gameErrorListener)
 
             setLaunchDetails(Lang.queryJS('landing.dlAsync.doneEnjoyServer'))
+
+            // Store console manager ref on proc for later access
+            proc._consoleMgr = consoleMgr
 
             // Init Discord Hook
             if(distro.rawDistribution.discord != null && serv.rawServer.discord != null){

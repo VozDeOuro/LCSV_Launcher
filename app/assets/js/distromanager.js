@@ -14,4 +14,38 @@ const api = new DistributionAPI(
     false
 )
 
+const REMOTE_TIMEOUT_MS = 10000
+let remoteLoadStatus = 'unknown'
+
+function timeout(ms) {
+    return new Promise(resolve => setTimeout(() => resolve(null), ms))
+}
+
+api.getRemoteLoadStatus = function(){
+    return remoteLoadStatus
+}
+
+api._loadDistributionNullable = async function(){
+    if(this.devMode){
+        remoteLoadStatus = 'local'
+        return await this.pullLocal()
+    }
+
+    const remoteDistro = await Promise.race([
+        this.pullRemote()
+            .then(res => res != null ? res.data : null)
+            .catch(() => null),
+        timeout(REMOTE_TIMEOUT_MS)
+    ])
+
+    if(remoteDistro != null){
+        remoteLoadStatus = 'online'
+        await this.writeDistributionToDisk(remoteDistro)
+        return remoteDistro
+    }
+
+    remoteLoadStatus = 'offline'
+    return await this.pullLocal()
+}
+
 exports.DistroAPI = api

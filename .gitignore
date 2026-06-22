@@ -4,3 +4,18 @@
 /target/
 /logs/
 /dist/
+
+# AI tooling
+/.claude/
+/.agents/
+/.codex/
+/.pi/
+/.hermes/
+/.gemini/
+/.aider/
+/.cursor/
+/CLAUDE.md
+/AGENTS.md
+
+# Implementation plans
+/.rpiv/*

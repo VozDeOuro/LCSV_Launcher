@@ -43,10 +43,13 @@ class ProcessBuilder {
     
     /**
      * Convienence method to run the functions typically used to build a process.
+     * 
+     * @param {Object} opts Optional callbacks: { onLogLine, onClose }
      */
-    build(){
+    build(opts = {}){
         fs.ensureDirSync(this.gameDir)
-        const tempNativePath = path.join(os.tmpdir(), ConfigManager.getTempNativeFolder(), crypto.randomBytes(16).toString('hex'))
+        const tempNativePath = path.join(this.gameDir, 'natives')
+        fs.emptyDirSync(tempNativePath)
         process.throwDeprecation = true
         this.setupLiteLoader()
         logger.info('Using liteloader:', this.usingLiteLoader)
@@ -76,6 +79,12 @@ class ProcessBuilder {
         loggableArgs[loggableArgs.findIndex(x => x === this.authUser.accessToken)] = '**********'
 
         logger.info('Launch Arguments:', loggableArgs)
+        logger.info('Native Directory:', tempNativePath)
+        try {
+            logger.info('Native Directory Contents:', fs.readdirSync(tempNativePath))
+        } catch(err) {
+            logger.warn('Unable to read native directory before launch.', err)
+        }
 
         const child = child_process.spawn(ConfigManager.getJavaExecutable(this.server.rawServer.id), args, {
             cwd: this.gameDir,
@@ -90,21 +99,21 @@ class ProcessBuilder {
         child.stderr.setEncoding('utf8')
 
         child.stdout.on('data', (data) => {
-            data.trim().split('\n').forEach(x => console.log(`\x1b[32m[Minecraft]\x1b[0m ${x}`))
-            
+            data.trim().split('\n').forEach(x => {
+                console.log(`\x1b[32m[Minecraft]\x1b[0m ${x}`)
+                if(x) opts.onLogLine?.({ stream: 'stdout', level: 'info', line: x })
+            })
         })
         child.stderr.on('data', (data) => {
-            data.trim().split('\n').forEach(x => console.log(`\x1b[31m[Minecraft]\x1b[0m ${x}`))
+            data.trim().split('\n').forEach(x => {
+                console.log(`\x1b[31m[Minecraft]\x1b[0m ${x}`)
+                if(x) opts.onLogLine?.({ stream: 'stderr', level: 'error', line: x })
+            })
         })
         child.on('close', (code, signal) => {
             logger.info('Exited with code', code)
-            fs.remove(tempNativePath, (err) => {
-                if(err){
-                    logger.warn('Error while deleting temp dir', err)
-                } else {
-                    logger.info('Temp dir deleted successfully.')
-                }
-            })
+            opts.onClose?.(code, signal)
+            logger.info('Native directory kept for next launch/debug:', tempNativePath)
         })
 
         return child
@@ -379,6 +388,7 @@ class ProcessBuilder {
         args.push('-Xms' + ConfigManager.getMinRAM(this.server.rawServer.id))
         args = args.concat(ConfigManager.getJVMOptions(this.server.rawServer.id))
         args.push('-Djava.library.path=' + tempNativePath)
+        args.push('-Dorg.lwjgl.librarypath=' + tempNativePath)
 
         // Main Java Class
         args.push(this.modManifest.mainClass)
@@ -429,6 +439,8 @@ class ProcessBuilder {
         args.push('-Xmx' + ConfigManager.getMaxRAM(this.server.rawServer.id))
         args.push('-Xms' + ConfigManager.getMinRAM(this.server.rawServer.id))
         args = args.concat(ConfigManager.getJVMOptions(this.server.rawServer.id))
+        args.push('-Djava.library.path=' + tempNativePath)
+        args.push('-Dorg.lwjgl.librarypath=' + tempNativePath)
 
         // Main Java Class
         args.push(this.modManifest.mainClass)
@@ -510,7 +522,7 @@ class ProcessBuilder {
                             val = this.authUser.accessToken
                             break
                         case 'user_type':
-                            val = this.authUser.type === 'microsoft' ? 'msa' : 'legacy'
+                            val = this.authUser.type === 'microsoft' ? 'msa' : 'mojang'
                             break
                         case 'version_type':
                             val = this.vanillaManifest.type
@@ -594,7 +606,7 @@ class ProcessBuilder {
                         val = this.authUser.accessToken
                         break
                     case 'user_type':
-                        val = this.authUser.type === 'microsoft' ? 'msa' : 'legacy'
+                        val = this.authUser.type === 'microsoft' ? 'msa' : 'mojang'
                         break
                     case 'user_properties': // 1.8.9 and below.
                         val = '{}'
@@ -748,13 +760,15 @@ class ProcessBuilder {
                             }
                         })
 
-                        // Extract the file.
+                        // Extract the file synchronously so Java does not start before natives exist.
                         if(!shouldExclude){
-                            fs.writeFile(path.join(tempNativePath, fileName), zipEntries[i].getData(), (err) => {
-                                if(err){
-                                    logger.error('Error while extracting native library:', err)
-                                }
-                            })
+                            try {
+                                const outPath = path.join(tempNativePath, fileName)
+                                fs.writeFileSync(outPath, zipEntries[i].getData())
+                                fs.chmodSync(outPath, 0o755)
+                            } catch(err) {
+                                logger.error('Error while extracting native library:', err)
+                            }
                         }
 
                     }
@@ -797,15 +811,17 @@ class ProcessBuilder {
                             }
                         })
 
-                        const extractName = fileName.includes('/') ? fileName.substring(fileName.lastIndexOf('/')) : fileName
+                        const extractName = fileName.includes('/') ? fileName.substring(fileName.lastIndexOf('/') + 1) : fileName
 
-                        // Extract the file.
+                        // Extract the file synchronously so Java does not start before natives exist.
                         if(!shouldExclude){
-                            fs.writeFile(path.join(tempNativePath, extractName), zipEntries[i].getData(), (err) => {
-                                if(err){
-                                    logger.error('Error while extracting native library:', err)
-                                }
-                            })
+                            try {
+                                const outPath = path.join(tempNativePath, extractName)
+                                fs.writeFileSync(outPath, zipEntries[i].getData())
+                                fs.chmodSync(outPath, 0o755)
+                            } catch(err) {
+                                logger.error('Error while extracting native library:', err)
+                            }
                         }
 
                     }
