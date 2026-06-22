@@ -12,6 +12,24 @@ const ConfigManager            = require('./configmanager')
 
 const logger = LoggerUtil.getLogger('ProcessBuilder')
 
+// Strip ANSI escape codes from log lines
+const ANSI_REGEX = /\x1b\[[0-9;]*m/g
+function stripAnsi(str) {
+    return str.replace(ANSI_REGEX, '')
+}
+
+// Classify log level from Minecraft/Forge/Fabric log prefixes
+const LEVEL_REGEX = /\[(?:[^\]]*\/)?(ERROR|WARN|INFO|DEBUG|FATAL)\]/i
+function classifyLevel(line, defaultLevel) {
+    const match = line.match(LEVEL_REGEX)
+    if (!match) return defaultLevel
+    const level = match[1].toLowerCase()
+    if (level === 'error' || level === 'fatal') return 'error'
+    if (level === 'warn') return 'warn'
+    if (level === 'info') return 'info'
+    if (level === 'debug') return 'info'
+    return defaultLevel
+}
 
 /**
  * Only forge and fabric are top level mod loaders.
@@ -86,10 +104,21 @@ class ProcessBuilder {
             logger.warn('Unable to read native directory before launch.', err)
         }
 
-        const child = child_process.spawn(ConfigManager.getJavaExecutable(this.server.rawServer.id), args, {
-            cwd: this.gameDir,
-            detached: ConfigManager.getLaunchDetached()
-        })
+        const javaExe = ConfigManager.getJavaExecutable(this.server.rawServer.id)
+        const wrapperCmd = ConfigManager.getWrapperCommand()
+
+        let child
+        if (wrapperCmd) {
+            child = child_process.spawn(wrapperCmd, [javaExe, ...args], {
+                cwd: this.gameDir,
+                detached: ConfigManager.getLaunchDetached()
+            })
+        } else {
+            child = child_process.spawn(javaExe, args, {
+                cwd: this.gameDir,
+                detached: ConfigManager.getLaunchDetached()
+            })
+        }
 
         if(ConfigManager.getLaunchDetached()){
             child.unref()
@@ -101,13 +130,13 @@ class ProcessBuilder {
         child.stdout.on('data', (data) => {
             data.trim().split('\n').forEach(x => {
                 console.log(`\x1b[32m[Minecraft]\x1b[0m ${x}`)
-                if(x) opts.onLogLine?.({ stream: 'stdout', level: 'info', line: x })
+                if(x) opts.onLogLine?.({ stream: 'stdout', level: classifyLevel(x, 'info'), line: stripAnsi(x) })
             })
         })
         child.stderr.on('data', (data) => {
             data.trim().split('\n').forEach(x => {
                 console.log(`\x1b[31m[Minecraft]\x1b[0m ${x}`)
-                if(x) opts.onLogLine?.({ stream: 'stderr', level: 'error', line: x })
+                if(x) opts.onLogLine?.({ stream: 'stderr', level: classifyLevel(x, 'error'), line: stripAnsi(x) })
             })
         })
         child.on('close', (code, signal) => {

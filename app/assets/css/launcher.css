@@ -1330,6 +1330,24 @@ body, button {
     color: rgba(255, 255, 255, .95);
     margin-top: 5px;
 }
+.settingsFieldDesc {
+    font-size: 12px;
+    color: rgba(255, 255, 255, .95);
+    margin-top: 5px;
+}
+.settingsTextInput {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.95);
+    padding: 6px 10px;
+    font-size: 13px;
+    border-radius: 4px;
+    width: 180px;
+    outline: none;
+}
+.settingsTextInput:focus {
+    border-color: rgba(255, 255, 255, 0.5);
+}
 .settingsDivider {
     height: 1px;
     width: 75%;
@@ -3316,49 +3334,6 @@ input:checked + .toggleSwitchSlider:before {
     margin-right: 10px;
     font-size: 18.5px;
     color: #848484;
-}
-
-/* Upload logs button and status wrapper. */
-#uploadLogsWrapper {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-#uploadLogsButton {
-    background: none;
-    border: none;
-    cursor: pointer;
-    outline: none;
-    padding: 6px 8px;
-    margin: -6px -8px;
-    transition: 0.25s ease;
-}
-#uploadLogsButton:hover,
-#uploadLogsButton:focus {
-    text-shadow: 0px 0px 20px #fff, 0px 0px 20px #fff;
-}
-#uploadLogsButton:active {
-    color: #c7c7c7;
-}
-#uploadLogsButton:disabled {
-    color: #c7c7c7;
-    cursor: default;
-    pointer-events: none;
-}
-
-#uploadLogsStatus {
-    font-size: 9px;
-    letter-spacing: 1px;
-    transition: 0.25s ease;
-}
-
-#uploadLogsStatus a {
-    color: #2ecc71;
-    text-decoration: underline;
-    cursor: pointer;
-    -webkit-user-select: text;
-    user-select: text;
 }
 
 /* * *

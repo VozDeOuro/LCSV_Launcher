@@ -82,11 +82,17 @@ const DEFAULT_CONFIG = {
             resHeight: 720,
             fullscreen: false,
             autoConnect: true,
-            launchDetached: true
+            launchDetached: true,
+            wrapperCommand: ''
         },
         launcher: {
             allowPrerelease: false,
             dataDirectory: dataPath
+        },
+        console: {
+            openOnLaunch: true,
+            keepOpenOnExit: true,
+            maxDisplayLines: 5000
         }
     },
     newsCache: {
@@ -771,6 +777,26 @@ exports.setLaunchDetached = function(launchDetached){
     config.settings.game.launchDetached = launchDetached
 }
 
+/**
+ * Retrieve the wrapper command prepended to the Java launch.
+ * (e.g. 'prime-run', 'gamemoderun')
+ * 
+ * @param {boolean} def Optional. If true, the default value will be returned.
+ * @returns {string} The wrapper command string.
+ */
+exports.getWrapperCommand = function(def = false){
+    return !def ? config.settings.game.wrapperCommand : DEFAULT_CONFIG.settings.game.wrapperCommand
+}
+
+/**
+ * Set the wrapper command prepended to the Java launch.
+ * 
+ * @param {string} cmd The wrapper command (e.g. 'prime-run').
+ */
+exports.setWrapperCommand = function(cmd){
+    config.settings.game.wrapperCommand = cmd?.trim() || ''
+}
+
 // Launcher Settings
 
 /**
@@ -790,4 +816,30 @@ exports.getAllowPrerelease = function(def = false){
  */
 exports.setAllowPrerelease = function(allowPrerelease){
     config.settings.launcher.allowPrerelease = allowPrerelease
+}
+
+// Console Settings
+
+exports.getConsoleOpenOnLaunch = function(){
+    return config.settings.console.openOnLaunch
+}
+
+exports.setConsoleOpenOnLaunch = function(val){
+    config.settings.console.openOnLaunch = val
+}
+
+exports.getConsoleKeepOpenOnExit = function(){
+    return config.settings.console.keepOpenOnExit
+}
+
+exports.setConsoleKeepOpenOnExit = function(val){
+    config.settings.console.keepOpenOnExit = val
+}
+
+exports.getConsoleMaxDisplayLines = function(){
+    return config.settings.console.maxDisplayLines
+}
+
+exports.setConsoleMaxDisplayLines = function(val){
+    config.settings.console.maxDisplayLines = val
 }
