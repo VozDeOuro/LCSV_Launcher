@@ -25,9 +25,9 @@ jobs:
             cmake ninja-build openjdk-21-jdk \
             qt6-base-dev qt6-base-private-dev qt6-tools-dev qt6-tools-dev-tools \
             qt6-l10n-tools libqt6svg6-dev libqt6networkauth6-dev \
-            libgl1-mesa-dev libssl-dev libcurl4-openssl-dev gamemode-dev \
-            libarchive-dev cmark libcmark-dev zlib1g-dev \
-            extra-cmake-modules
+            libgl1-mesa-dev libssl-dev libcurl4-openssl-dev gamemode-dev libgamemode0 \
+            libarchive-dev cmark libcmark-dev libqrencode-dev zlib1g-dev \
+            extra-cmake-modules pkg-config scdoc libxcb-cursor-dev libtomlplusplus-dev
 
       - name: Get version
         id: ver
@@ -74,6 +74,11 @@ jobs:
         with:
           submodules: true
 
+      - uses: actions/setup-java@v5
+        with:
+          distribution: zulu
+          java-version: 17
+
       - uses: msys2/setup-msys2@v2
         with:
           msystem: CLANG64
@@ -88,6 +93,8 @@ jobs:
             mingw-w64-clang-x86_64-qt6-networkauth
             mingw-w64-clang-x86_64-libarchive
             mingw-w64-clang-x86_64-cmark
+            mingw-w64-clang-x86_64-qrencode
+            mingw-w64-clang-x86_64-tomlplusplus
             mingw-w64-clang-x86_64-zlib
             mingw-w64-clang-x86_64-extra-cmake-modules
             mingw-w64-clang-x86_64-nsis
@@ -117,6 +124,8 @@ jobs:
         run: |
           cd build/program_info
           windeployqt6 lcsv-launcher.exe
+          touch qt.conf
+          cp ../../launcher/qtlogging.ini .
 
       - name: Package (NSIS installer)
         run: |
