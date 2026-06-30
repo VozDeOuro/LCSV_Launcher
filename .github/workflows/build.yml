@@ -30,7 +30,7 @@ jobs:
             cmake ninja-build openjdk-21-jdk \
             qt6-base-dev qt6-base-private-dev qt6-tools-dev qt6-tools-dev-tools \
             qt6-l10n-tools libqt6svg6-dev libqt6networkauth6-dev \
-            libgl1-mesa-dev libssl-dev libcurl4-openssl-dev libgamemode-dev \
+            libgl1-mesa-dev libssl-dev libcurl4-openssl-dev gamemode-dev \
             libarchive-dev cmark libcmark-dev zlib1g-dev \
             extra-cmake-modules
 
