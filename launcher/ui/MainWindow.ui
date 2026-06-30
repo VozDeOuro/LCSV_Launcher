@@ -124,6 +124,9 @@
    <addaction name="actionCopyInstance"/>
    <addaction name="actionDeleteInstance"/>
    <addaction name="actionCreateInstanceShortcut"/>
+   <addaction name="separator"/>
+   <addaction name="actionLcsvForceUpdate"/>
+   <addaction name="actionExportLcsvPack"/>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
@@ -153,6 +156,9 @@
     <addaction name="actionCopyInstance"/>
     <addaction name="actionDeleteInstance"/>
     <addaction name="actionCreateInstanceShortcut"/>
+    <addaction name="separator"/>
+    <addaction name="actionLcsvForceUpdate"/>
+    <addaction name="actionExportLcsvPack"/>
     <addaction name="separator"/>
     <addaction name="actionSettings"/>
     <addaction name="actionCloseWindow"/>
@@ -777,6 +783,22 @@
    </property>
    <property name="toolTip">
     <string>Open the Java folder in a file browser. Only available if the built-in Java downloader is used.</string>
+   </property>
+  </action>
+  <action name="actionLcsvForceUpdate">
+   <property name="text">
+    <string>Force Update LCSV Pack</string>
+   </property>
+   <property name="toolTip">
+    <string>Re-download all LCSV pack files, ignoring protected/kept file rules.</string>
+   </property>
+  </action>
+  <action name="actionExportLcsvPack">
+   <property name="text">
+    <string>Export as LCSV Pack...</string>
+   </property>
+   <property name="toolTip">
+    <string>Export this instance as an LCSV pack (developer mode).</string>
    </property>
   </action>
  </widget>

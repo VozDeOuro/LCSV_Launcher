@@ -253,6 +253,7 @@ void LauncherPage::applySettings()
     s->set("ShowModIncompat", ui->showModIncompatCheckBox->isChecked());
     s->set("SkipModpackUpdatePrompt", !ui->modpackUpdatePromptBtn->isChecked());
     s->set("DownloadGameFilesDuringInstanceCreation", ui->downloadGameFilesBtn->isChecked());
+    s->set("LCSVDeveloperMode", ui->lcsvDeveloperModeCheckBox->isChecked());
 }
 void LauncherPage::loadSettings()
 {
@@ -306,6 +307,7 @@ void LauncherPage::loadSettings()
     ui->showModIncompatCheckBox->setChecked(s->get("ShowModIncompat").toBool());
     ui->modpackUpdatePromptBtn->setChecked(!s->get("SkipModpackUpdatePrompt").toBool());
     ui->downloadGameFilesBtn->setChecked(s->get("DownloadGameFilesDuringInstanceCreation").toBool());
+    ui->lcsvDeveloperModeCheckBox->setChecked(s->get("LCSVDeveloperMode").toBool());
 }
 
 void LauncherPage::retranslate()

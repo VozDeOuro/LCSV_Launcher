@@ -280,6 +280,11 @@ bool FileIgnoreProxy::ignoreFile(QFileInfo fileInfo) const
         return true;
     }
 
+    for (const auto& pattern : m_ignorePatterns) {
+        if (pattern.match(fileInfo.fileName()).hasMatch())
+            return true;
+    }
+
     return false;
 }
 

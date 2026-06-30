@@ -163,6 +163,9 @@ class MainWindow : public QMainWindow {
     void on_actionExportInstanceMrPack_triggered();
     void on_actionExportInstanceFlamePack_triggered();
 
+    void on_actionLcsvForceUpdate_triggered();
+    void on_actionExportLcsvPack_triggered();
+
     void on_actionRenameInstance_triggered();
 
     void on_actionEditInstance_triggered();

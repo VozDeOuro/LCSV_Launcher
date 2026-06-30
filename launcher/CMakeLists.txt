@@ -240,6 +240,8 @@ set(MINECRAFT_SOURCES
     minecraft/auth/steps/MinecraftProfileStep.h
     minecraft/auth/steps/MSADeviceCodeStep.cpp
     minecraft/auth/steps/MSADeviceCodeStep.h
+    minecraft/auth/steps/OfflineSkinStep.cpp
+    minecraft/auth/steps/OfflineSkinStep.h
     minecraft/auth/steps/MSAStep.cpp
     minecraft/auth/steps/MSAStep.h
     minecraft/auth/steps/XboxAuthorizationStep.cpp
@@ -580,6 +582,30 @@ set(TECHNIC_SOURCES
     modplatform/technic/TechnicPackProcessor.cpp
 )
 
+set(LCSV_SOURCES
+    modplatform/lcsv/LCSVPackIndex.cpp
+    modplatform/lcsv/LCSVPackIndex.h
+    modplatform/lcsv/LCSVInstallTask.cpp
+    modplatform/lcsv/LCSVInstallTask.h
+    modplatform/lcsv/LCSVUserFileManager.cpp
+    modplatform/lcsv/LCSVUserFileManager.h
+    ui/pages/modplatform/lcsv/LCSVListModel.cpp
+    ui/pages/modplatform/lcsv/LCSVListModel.h
+    ui/pages/modplatform/lcsv/LCSVPage.cpp
+    ui/pages/modplatform/lcsv/LCSVPage.h
+    ui/pages/modplatform/lcsv/LCSVPage.ui
+    ui/dialogs/LCSVUpdateDialog.cpp
+    ui/dialogs/LCSVUpdateDialog.h
+    ui/dialogs/LCSVUpdateDialog.ui
+    modplatform/lcsv/LCSVUpdateTask.cpp
+    modplatform/lcsv/LCSVUpdateTask.h
+    modplatform/lcsv/LCSVExportTask.cpp
+    modplatform/lcsv/LCSVExportTask.h
+    ui/dialogs/LCSVExportDialog.cpp
+    ui/dialogs/LCSVExportDialog.h
+    ui/dialogs/LCSVExportDialog.ui
+)
+
 set(ATLAUNCHER_SOURCES
     modplatform/atlauncher/ATLPackIndex.cpp
     modplatform/atlauncher/ATLPackIndex.h
@@ -781,6 +807,7 @@ set(LOGIC_SOURCES
     ${PACKWIZ_SOURCES}
     ${TECHNIC_SOURCES}
     ${ATLAUNCHER_SOURCES}
+    ${LCSV_SOURCES}
 )
 
 if(APPLE AND Launcher_ENABLE_UPDATER)

@@ -37,6 +37,8 @@
 #pragma once
 
 #include <QFileInfo>
+#include <QList>
+#include <QRegularExpression>
 #include <QSortFilterProxyModel>
 #include "SeparatorPrefixTree.h"
 
@@ -69,6 +71,8 @@ class FileIgnoreProxy : public QSortFilterProxyModel {
     inline QStringList& ignoreFilesWithSuffix() { return m_ignoreFilesSuffixes; }
     // list of relative paths that need to be removed completely from model
     inline SeparatorPrefixTree<'/'>& ignoreFilesWithPath() { return m_ignoreFilePaths; }
+    // list of regex patterns matched against file/dir name — hidden completely from model
+    inline QList<QRegularExpression>& ignoreFilesMatchingPattern() { return m_ignorePatterns; }
 
     bool filterFile(const QFileInfo& fileName) const;
 
@@ -88,4 +92,5 @@ class FileIgnoreProxy : public QSortFilterProxyModel {
     QStringList m_ignoreFiles;
     QStringList m_ignoreFilesSuffixes;
     SeparatorPrefixTree<'/'> m_ignoreFilePaths;
+    QList<QRegularExpression> m_ignorePatterns;
 };

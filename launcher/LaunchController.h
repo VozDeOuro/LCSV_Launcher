@@ -39,6 +39,7 @@
 
 #include "minecraft/auth/MinecraftAccount.h"
 #include "minecraft/launch/MinecraftTarget.h"
+#include "tasks/Task.h"
 
 class InstanceWindow;
 
@@ -75,6 +76,7 @@ class LaunchController : public Task {
    private:
     void login();
     void launchInstance();
+    void startGameLaunch();
     void decideAccount();
     LaunchDecision decideLaunchMode();
     bool askPlayDemo() const;
@@ -83,6 +85,7 @@ class LaunchController : public Task {
 
    private slots:
     void readyForLaunch();
+    void onLcsvUpdateDone();
 
     void onSucceeded();
     void onFailed(QString reason);
@@ -100,4 +103,5 @@ class LaunchController : public Task {
     AuthSessionPtr m_session = nullptr;
     LaunchTask* m_launcher = nullptr;
     MinecraftTarget::Ptr m_targetToJoin = nullptr;
+    Task::Ptr m_lcsvUpdateTask;
 };

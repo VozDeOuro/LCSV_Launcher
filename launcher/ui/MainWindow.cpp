@@ -92,6 +92,8 @@
 #include <updater/ExternalUpdater.h>
 #include "InstanceWindow.h"
 
+#include "modplatform/lcsv/LCSVUpdateTask.h"
+#include "modplatform/lcsv/LCSVUserFileManager.h"
 #include "ui/GuiUtil.h"
 #include "ui/ViewLogWindow.h"
 #include "ui/dialogs/AboutDialog.h"
@@ -102,6 +104,7 @@
 #include "ui/dialogs/ExportPackDialog.h"
 #include "ui/dialogs/IconPickerDialog.h"
 #include "ui/dialogs/ImportResourceDialog.h"
+#include "ui/dialogs/LCSVExportDialog.h"
 #include "ui/dialogs/NewInstanceDialog.h"
 #include "ui/dialogs/NewsDialog.h"
 #include "ui/dialogs/ProgressDialog.h"
@@ -186,7 +189,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
         ui->instanceToolBar->setVisibilityState(QByteArray::fromBase64(instanceToolbarSetting->get().toString().toUtf8()));
 
-        ui->instanceToolBar->addContextMenuAction(ui->newsToolBar->toggleViewAction());
         ui->instanceToolBar->addContextMenuAction(ui->instanceToolBar->toggleViewAction());
         ui->instanceToolBar->addContextMenuAction(ui->actionToggleStatusBar);
         ui->instanceToolBar->addContextMenuAction(ui->actionLockToolbars);
@@ -247,7 +249,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     // add the toolbar toggles to the view menu
     ui->viewMenu->addAction(ui->instanceToolBar->toggleViewAction());
-    ui->viewMenu->addAction(ui->newsToolBar->toggleViewAction());
 
     updateThemeMenu();
     updateMainToolBar();
@@ -275,20 +276,15 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         connect(secretEventFilter, &KonamiCode::triggered, this, &MainWindow::konamiTriggered);
     }
 
-    // Add the news label to the news toolbar.
-    {
-        m_newsChecker.reset(new NewsChecker(APPLICATION->network(), BuildConfig.NEWS_RSS_URL));
-        newsLabel = new QToolButton();
-        newsLabel->setIcon(QIcon::fromTheme("news"));
-        newsLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-        newsLabel->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-        newsLabel->setFocusPolicy(Qt::NoFocus);
-        ui->newsToolBar->insertWidget(ui->actionMoreNews, newsLabel);
-
-        connect(newsLabel, &QAbstractButton::clicked, this, &MainWindow::newsButtonClicked);
-        connect(m_newsChecker.get(), &NewsChecker::newsLoaded, this, &MainWindow::updateNewsLabel);
-        updateNewsLabel();
-    }
+    // News disabled for LCSV Launcher.
+    ui->newsToolBar->hide();
+    ui->newsToolBar->toggleViewAction()->setVisible(false);
+    ui->newsToolBar->toggleViewAction()->setEnabled(false);
+    ui->actionMoreNews->setVisible(false);
+    ui->actionMoreNews->setEnabled(false);
+    newsLabel = new QToolButton();  // kept to avoid null-deref if old news slots fire
+    newsLabel->hide();
+    ui->newsToolBar->insertWidget(ui->actionMoreNews, newsLabel);
 
     // Create the instance list widget
     {
@@ -406,11 +402,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     // TODO: refresh accounts here?
     // auto accounts = APPLICATION->accounts();
 
-    // load the news
-    {
-        m_newsChecker->reloadNews();
-        updateNewsLabel();
-    }
+    // News disabled for LCSV Launcher.
 
     if (APPLICATION->updaterEnabled()) {
         bool updatesAllowed = APPLICATION->updatesAreAllowed();
@@ -485,6 +477,7 @@ QMenu* MainWindow::createPopupMenu()
 {
     QMenu* filteredMenu = QMainWindow::createPopupMenu();
     filteredMenu->removeAction(ui->mainToolBar->toggleViewAction());
+    filteredMenu->removeAction(ui->newsToolBar->toggleViewAction());
 
     filteredMenu->addAction(ui->actionToggleStatusBar);
     filteredMenu->addAction(ui->actionLockToolbars);
@@ -655,7 +648,7 @@ void MainWindow::repopulateAccountsMenu()
 
     auto accounts = APPLICATION->accounts();
     MinecraftAccountPtr defaultAccount = accounts->defaultAccount();
-    
+
     bool canChangeSkin = defaultAccount && (defaultAccount->accountType() == AccountType::MSA) && !defaultAccount->isActive();
     ui->actionManageSkins->setEnabled(canChangeSkin);
 
@@ -806,6 +799,11 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* ev)
 
 void MainWindow::updateNewsLabel()
 {
+    if (!m_newsChecker || !newsLabel) {
+        ui->actionMoreNews->setVisible(false);
+        return;
+    }
+
     if (m_newsChecker->isLoadingNews()) {
         newsLabel->setText(tr("Loading news..."));
         newsLabel->setEnabled(false);
@@ -1459,6 +1457,9 @@ void MainWindow::on_actionOpenWiki_triggered()
 
 void MainWindow::on_actionMoreNews_triggered()
 {
+    if (!m_newsChecker) {
+        return;
+    }
     auto entries = m_newsChecker->getNewsEntries();
     NewsDialog news_dialog(entries, this);
     news_dialog.exec();
@@ -1466,6 +1467,9 @@ void MainWindow::on_actionMoreNews_triggered()
 
 void MainWindow::newsButtonClicked()
 {
+    if (!m_newsChecker) {
+        return;
+    }
     auto entries = m_newsChecker->getNewsEntries();
     NewsDialog news_dialog(entries, this);
     news_dialog.toggleArticleList();
@@ -1561,6 +1565,29 @@ void MainWindow::on_actionExportInstanceFlamePack_triggered()
             dlg.exec();
         }
     }
+}
+
+void MainWindow::on_actionLcsvForceUpdate_triggered()
+{
+    if (!m_selectedInstance)
+        return;
+    auto* mcInst = dynamic_cast<MinecraftInstance*>(m_selectedInstance);
+    if (!mcInst)
+        return;
+    auto task = makeShared<LCSV::UpdateTask>(mcInst->instanceRoot(), mcInst->gameRoot(), this, /*force=*/true);
+    runModalTask(task.get());
+    QMessageBox::information(this, tr("LCSV Update"), task->getStatus());
+}
+
+void MainWindow::on_actionExportLcsvPack_triggered()
+{
+    if (!m_selectedInstance)
+        return;
+    auto* mcInst = dynamic_cast<MinecraftInstance*>(m_selectedInstance);
+    if (!mcInst)
+        return;
+    LCSVExportDialog dlg(mcInst, this);
+    dlg.exec();
 }
 
 void MainWindow::on_actionRenameInstance_triggered()
@@ -1674,6 +1701,16 @@ void MainWindow::instanceChanged(const QModelIndex& current, [[maybe_unused]] co
 
         ui->actionKillInstance->setEnabled(m_selectedInstance->isRunning());
         ui->actionExportInstance->setEnabled(m_selectedInstance->canExport());
+
+        bool isLcsv = LCSV::UserFileManager::hasMeta(m_selectedInstance->instanceRoot());
+        ui->actionLcsvForceUpdate->setVisible(isLcsv);
+        ui->actionLcsvForceUpdate->setEnabled(isLcsv && !m_selectedInstance->isRunning());
+
+        bool devMode = APPLICATION->settings()->get("LCSVDeveloperMode").toBool();
+        bool isMc = dynamic_cast<MinecraftInstance*>(m_selectedInstance) != nullptr;
+        ui->actionExportLcsvPack->setVisible(devMode && isMc);
+        ui->actionExportLcsvPack->setEnabled(devMode && isMc && !m_selectedInstance->isRunning());
+
         renameButton->setText(m_selectedInstance->name());
         m_statusLeft->setText(m_selectedInstance->getStatusbarDescription());
         updateStatusCenter();
@@ -1778,6 +1815,10 @@ void MainWindow::setInstanceActionsEnabled(bool enabled)
     ui->actionDeleteInstance->setEnabled(enabled);
     ui->actionCopyInstance->setEnabled(enabled);
     ui->actionCreateInstanceShortcut->setEnabled(enabled);
+    if (!enabled) {
+        ui->actionLcsvForceUpdate->setVisible(false);
+        ui->actionExportLcsvPack->setVisible(false);
+    }
 }
 
 void MainWindow::refreshCurrentInstance()

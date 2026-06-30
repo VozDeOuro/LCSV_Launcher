@@ -175,10 +175,10 @@ endif()
 ##################################### Set Application options #####################################
 
 ######## Set URLs ########
-set(Launcher_NEWS_RSS_URL "https://prismlauncher.org/feed/feed.xml" CACHE STRING "URL to fetch Prism Launcher's news RSS feed from.")
-set(Launcher_NEWS_OPEN_URL "https://prismlauncher.org/news" CACHE STRING "URL that gets opened when the user clicks 'More News'")
-set(Launcher_WIKI_URL "https://prismlauncher.org/wiki/" CACHE STRING "URL that gets opened when the user clicks 'Launcher Help'")
-set(Launcher_HELP_URL "https://prismlauncher.org/wiki/help-pages/%1" CACHE STRING "URL (with arg %1 to be substituted with page-id) that gets opened when the user requests help in a dialog window")
+set(Launcher_NEWS_RSS_URL "https://lcsv.com.br/feed/feed.xml" CACHE STRING "URL to fetch news RSS feed from.")
+set(Launcher_NEWS_OPEN_URL "https://lcsv.com.br/news" CACHE STRING "URL that gets opened when the user clicks 'More News'")
+set(Launcher_WIKI_URL "https://lcsv.com.br/wiki/" CACHE STRING "URL that gets opened when the user clicks 'Launcher Help'")
+set(Launcher_HELP_URL "https://lcsv.com.br/wiki/help-pages/%1" CACHE STRING "URL (with arg %1 to be substituted with page-id) that gets opened when the user requests help in a dialog window")
 set(Launcher_LOGIN_CALLBACK_URL "https://prismlauncher.org/successful-login" CACHE STRING "URL that gets opened when the user successfully logins.")
 set(Launcher_LEGACY_FMLLIBS_BASE_URL "https://files.prismlauncher.org/fmllibs/" CACHE STRING "URL for legacy (<=1.5.2) FML Libraries.")
 
@@ -195,10 +195,20 @@ set(Launcher_VERSION_NAME4_COMMA "${Launcher_VERSION_MAJOR},${Launcher_VERSION_M
 set(Launcher_BUILD_PLATFORM "unknown" CACHE STRING "A short string identifying the platform that this build was built for. Only used to display in the about dialog.")
 
 # Github repo URL with releases for updater
-set(Launcher_UPDATER_GITHUB_REPO "https://github.com/PrismLauncher/PrismLauncher" CACHE STRING "Base github URL for the updater.")
+set(Launcher_UPDATER_GITHUB_REPO "https://github.com/VozDeOuro/LCSV_Launcher" CACHE STRING "Base github URL for the updater.")
 
-# Name to help updater identify valid artifacts
-set(Launcher_BUILD_ARTIFACT "" CACHE STRING "Artifact name to help the updater identify valid artifacts.")
+# Name to help updater identify valid artifacts — auto-detect by platform/arch
+if(NOT Launcher_BUILD_ARTIFACT)
+    if(WIN32)
+        set(Launcher_BUILD_ARTIFACT "windows-x86_64" CACHE STRING "Artifact name to help the updater identify valid artifacts.")
+    elseif(UNIX AND NOT APPLE)
+        set(Launcher_BUILD_ARTIFACT "linux-x86_64" CACHE STRING "Artifact name to help the updater identify valid artifacts.")
+    else()
+        set(Launcher_BUILD_ARTIFACT "" CACHE STRING "Artifact name to help the updater identify valid artifacts.")
+    endif()
+else()
+    set(Launcher_BUILD_ARTIFACT "${Launcher_BUILD_ARTIFACT}" CACHE STRING "Artifact name to help the updater identify valid artifacts.")
+endif()
 
 # The metadata server
 set(Launcher_META_URL "https://meta.prismlauncher.org/v1/" CACHE STRING "URL to fetch Launcher's meta files from.")
@@ -346,7 +356,7 @@ include(ECMQtDeclareLoggingCategory)
 
 ####################################### Program Info #######################################
 
-set(Launcher_APP_BINARY_NAME "prismlauncher" CACHE STRING "Name of the Launcher binary")
+set(Launcher_APP_BINARY_NAME "lcsv-launcher" CACHE STRING "Name of the Launcher binary")
 add_subdirectory(program_info)
 
 ####################################### Install layout #######################################

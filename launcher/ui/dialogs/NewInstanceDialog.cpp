@@ -60,6 +60,7 @@
 #include "ui/pages/modplatform/CustomPage.h"
 #include "ui/pages/modplatform/ImportPage.h"
 #include "ui/pages/modplatform/atlauncher/AtlPage.h"
+#include "ui/pages/modplatform/lcsv/LCSVPage.h"
 #include "ui/pages/modplatform/flame/FlamePage.h"
 #include "ui/pages/modplatform/ftb/FtbPage.h"
 #include "ui/pages/modplatform/legacy_ftb/Page.h"
@@ -173,6 +174,7 @@ QList<BasePage*> NewInstanceDialog::getPages()
 
     importPage = new ImportPage(this);
 
+    pages.append(new LCSVPage(this));
     pages.append(new CustomPage(this));
     pages.append(importPage);
     pages.append(new AtlPage(this));

@@ -9,6 +9,7 @@
 #include "minecraft/auth/steps/MSADeviceCodeStep.h"
 #include "minecraft/auth/steps/MSAStep.h"
 #include "minecraft/auth/steps/MinecraftProfileStep.h"
+#include "minecraft/auth/steps/OfflineSkinStep.h"
 #include "minecraft/auth/steps/XboxAuthorizationStep.h"
 #include "minecraft/auth/steps/XboxUserStep.h"
 #include "tasks/Task.h"
@@ -37,6 +38,8 @@ AuthFlow::AuthFlow(AccountData* data, Action action) : Task(), m_data(data)
         m_steps.append(makeShared<EntitlementsStep>(m_data));
         m_steps.append(makeShared<MinecraftProfileStep>(m_data));
         m_steps.append(makeShared<GetSkinStep>(m_data));
+    } else if (data->type == AccountType::Offline) {
+        m_steps.append(makeShared<OfflineSkinStep>(m_data));
     }
     changeState(AccountTaskState::STATE_CREATED);
 }

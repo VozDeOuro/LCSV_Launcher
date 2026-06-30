@@ -470,6 +470,16 @@
             </property>
            </widget>
           </item>
+          <item>
+           <widget class="QCheckBox" name="lcsvDeveloperModeCheckBox">
+            <property name="toolTip">
+             <string>Shows the "Export as LCSV Pack" action on the instance context menu.</string>
+            </property>
+            <property name="text">
+             <string>LCSV Developer Mode (enables pack export)</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>

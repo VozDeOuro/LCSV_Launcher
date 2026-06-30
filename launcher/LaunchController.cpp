@@ -56,6 +56,8 @@
 #include "BuildConfig.h"
 #include "JavaCommon.h"
 #include "launch/steps/TextPrint.h"
+#include "modplatform/lcsv/LCSVUpdateTask.h"
+#include "modplatform/lcsv/LCSVUserFileManager.h"
 #include "tasks/Task.h"
 #include "ui/dialogs/ChooseOfflineNameDialog.h"
 
@@ -92,11 +94,11 @@ void LaunchController::decideAccount()
         m_accountToUse = accounts->at(instanceAccountIndex);
     }
 
-    if (!accounts->anyAccountIsValid()) {
-        // Tell the user they need to log in at least one account in order to play.
+    if (accounts->count() == 0) {
+        // Tell the user they need to add at least one account in order to play.
         auto reply = CustomMessageBox::selectable(m_parentWidget, tr("No Accounts"),
-                                                  tr("In order to play Minecraft, you must have at least one Microsoft "
-                                                     "account which owns Minecraft logged in. "
+                                                  tr("In order to play Minecraft, you must have at least one Microsoft or offline "
+                                                     "account added. "
                                                      "Would you like to open the account manager to add an account now?"),
                                                   QMessageBox::Information, QMessageBox::Yes | QMessageBox::No)
                          ->exec();
@@ -104,13 +106,14 @@ void LaunchController::decideAccount()
         if (reply == QMessageBox::Yes) {
             // Open the account manager.
             APPLICATION->ShowGlobalSettings(m_parentWidget, "accounts");
+            m_accountToUse = accounts->defaultAccount();
         } else if (reply == QMessageBox::No) {
             // Do not open "profile select" dialog.
             return;
         }
     }
 
-    if (!m_accountToUse && accounts->anyAccountIsValid()) {
+    if (!m_accountToUse && accounts->count() > 0) {
         // If no default account is set, ask the user which one to use.
         ProfileSelectDialog selectDialog(tr("Which account would you like to use?"), ProfileSelectDialog::GlobalDefaultCheckbox,
                                          m_parentWidget);
@@ -136,6 +139,11 @@ LaunchDecision LaunchController::decideLaunchMode()
 
     const auto* accounts = APPLICATION->accounts();
     MinecraftAccountPtr accountToCheck = nullptr;
+
+    if (m_accountToUse->accountType() == AccountType::Offline) {
+        m_actualLaunchMode = LaunchMode::Offline;
+        return LaunchDecision::Continue;
+    }
 
     if (m_accountToUse->accountType() != AccountType::Offline) {
         accountToCheck = m_accountToUse->ownsMinecraft() ? m_accountToUse : nullptr;
@@ -376,6 +384,27 @@ void LaunchController::launchInstance()
         return;
     }
 
+    // FIX #6: Run LCSV update task before creating the launch task
+    if (LCSV::UserFileManager::hasMeta(m_instance->instanceRoot())) {
+        m_lcsvUpdateTask = makeShared<LCSV::UpdateTask>(m_instance->instanceRoot(), m_instance->gameRoot(), m_parentWidget);
+        connect(m_lcsvUpdateTask.get(), &Task::succeeded, this, &LaunchController::onLcsvUpdateDone);
+        connect(m_lcsvUpdateTask.get(), &Task::failed, this, [this](QString) { onLcsvUpdateDone(); });
+        connect(m_lcsvUpdateTask.get(), &Task::aborted, this, [this] { emitFailed(tr("LCSV update was aborted.")); });
+        m_lcsvUpdateTask->start();
+        return;
+    }
+
+    startGameLaunch();
+}
+
+void LaunchController::onLcsvUpdateDone()
+{
+    m_lcsvUpdateTask.reset();
+    startGameLaunch();
+}
+
+void LaunchController::startGameLaunch()
+{
     m_launcher = m_instance->createLaunchTask(m_session, m_targetToJoin);
     if (!m_launcher) {
         emitFailed(tr("Couldn't instantiate a launcher."));
@@ -481,6 +510,10 @@ void LaunchController::onProgressRequested(Task* task) const
 
 bool LaunchController::abort()
 {
+    if (m_lcsvUpdateTask) {
+        m_lcsvUpdateTask->abort();
+        return true;
+    }
     if (!m_launcher) {
         return true;
     }

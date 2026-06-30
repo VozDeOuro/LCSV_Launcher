@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop">
+  <id>@Launcher_AppID@</id>
+  <name>LCSV Launcher</name>
+  <summary>Custom Minecraft Launcher with LCSV server modpack support</summary>
+  <developer id="com.lcsv">
+    <name>LCSV Contributors</name>
+  </developer>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+  <description>
+    <p>LCSV Launcher is a custom Minecraft launcher forked from Prism Launcher, with built-in support for LCSV server modpacks.</p>
+    <p>Features:</p>
+    <ul>
+      <li>Browse and install LCSV server modpacks directly from the launcher</li>
+      <li>Automatic per-file update checks before each launch</li>
+      <li>User config files (options.txt, keybinds, shaders) are never overwritten</li>
+      <li>Supports both Microsoft and offline (cracked) accounts</li>
+      <li>Easily install game modifications: Fabric, Forge, NeoForge, Quilt</li>
+      <li>Manage worlds and resource packs from the launcher</li>
+      <li>Kill Minecraft in case of a crash/freeze</li>
+      <li>Isolate Minecraft instances to keep everything clean</li>
+    </ul>
+  </description>
+  <releases>
+    <release version="@Launcher_VERSION_NAME@" date="@Launcher_BUILD_TIMESTAMP@"></release>
+  </releases>
+  <url type="homepage">https://lcsv.com.br/</url>
+  <url type="bugtracker">https://github.com/VozDeOuro/LCSV_prism/issues</url>
+  <url type="vcs-browser">https://github.com/VozDeOuro/LCSV_prism</url>
+  <content_rating type="oars-1.1">
+    <content_attribute id="violence-fantasy">moderate</content_attribute>
+    <content_attribute id="social-chat">intense</content_attribute>
+  </content_rating>
+  <launchable type="desktop-id">@Launcher_AppID@.desktop</launchable>
+</component>

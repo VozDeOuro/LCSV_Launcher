@@ -1,5 +1,7 @@
 #include "LoginWizardPage.h"
 #include "minecraft/auth/AccountList.h"
+#include "minecraft/auth/MinecraftAccount.h"
+#include "ui/dialogs/ChooseOfflineNameDialog.h"
 #include "ui/dialogs/MSALoginDialog.h"
 #include "ui_LoginWizardPage.h"
 
@@ -35,6 +37,22 @@ void LoginWizardPage::on_pushButton_clicked()
     if (account) {
         APPLICATION->accounts()->addAccount(account);
         APPLICATION->accounts()->setDefaultAccount(account);
+        if (wizard()->currentId() == wizard()->pageIds().last()) {
+            wizard()->accept();
+        } else {
+            wizard()->next();
+        }
+    }
+}
+
+void LoginWizardPage::on_pushButtonOffline_clicked()
+{
+    ChooseOfflineNameDialog dialog(tr("Enter a username for your offline account."), this);
+    if (dialog.exec() == QDialog::Accepted && !dialog.getUsername().isEmpty()) {
+        auto account = MinecraftAccount::createOffline(dialog.getUsername());
+        APPLICATION->accounts()->addAccount(account);
+        APPLICATION->accounts()->setDefaultAccount(account);
+        account->login()->start();  // Best-effort fetches skin head for matching online username.
         if (wizard()->currentId() == wizard()->pageIds().last()) {
             wizard()->accept();
         } else {
