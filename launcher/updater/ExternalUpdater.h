@@ -72,7 +72,7 @@ class ExternalUpdater : public QObject {
 
    signals:
     /*!
-     * Emits whenever the user's ability to check for updates changes.
+     * Emits whenever the user’s ability to check for updates changes.
      *
      * As per Sparkle documentation, "An update check can be made by the user when an update session isn’t in progress,
      * or when an update or its progress is being shown to the user. A user cannot check for updates when data (such
@@ -81,6 +81,9 @@ class ExternalUpdater : public QObject {
      * This property is suitable to use for menu item validation for seeing if checkForUpdates can be invoked."
      */
     void canCheckForUpdatesChanged(bool canCheck);
+
+    /*! Emits after each update check: true when a newer version is available, false when already up to date. */
+    void updateAvailable(bool available);
 };
 
 #endif  // LAUNCHER_EXTERNALUPDATER_H

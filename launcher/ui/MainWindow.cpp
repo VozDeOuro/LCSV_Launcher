@@ -223,7 +223,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         ui->actionDISCORD->setVisible(!BuildConfig.DISCORD_URL.isEmpty());
         ui->actionREDDIT->setVisible(!BuildConfig.SUBREDDIT_URL.isEmpty());
 
-        ui->actionCheckUpdate->setVisible(APPLICATION->updaterEnabled());
+        ui->actionCheckUpdate->setVisible(false);
 
 #ifndef Q_OS_MAC
         ui->actionAddToPATH->setVisible(false);
@@ -415,6 +415,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
         if (updater) {
             connect(updater, &ExternalUpdater::canCheckForUpdatesChanged, this, &MainWindow::updatesAllowedChanged);
+            connect(updater, &ExternalUpdater::updateAvailable, this,
+                    [this](bool available) { ui->actionCheckUpdate->setVisible(available); });
         }
     }
 

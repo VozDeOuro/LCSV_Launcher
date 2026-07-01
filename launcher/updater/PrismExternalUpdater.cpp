@@ -93,7 +93,7 @@ void PrismExternalUpdater::checkForUpdates()
     checkForUpdates(true);
 }
 
-void PrismExternalUpdater::checkForUpdates(bool triggeredByUser) const
+void PrismExternalUpdater::checkForUpdates(bool triggeredByUser)
 {
     QProgressDialog progress(tr("Checking for updates..."), "", 0, 0, priv->parent);
     progress.setMinimumDuration(0); // Appear immediately without waiting
@@ -221,6 +221,7 @@ void PrismExternalUpdater::checkForUpdates(bool triggeredByUser) const
                 msgBox.exec();
             }
     }
+    emit updateAvailable(exitCode == 100);
     priv->lastCheck = QDateTime::currentDateTime();
     priv->settings->setValue("last_check", priv->lastCheck.toString(Qt::ISODate));
     priv->settings->sync();
@@ -299,7 +300,7 @@ void PrismExternalUpdater::disconnectTimer()
     disconnect(&priv->updateTimer, &QTimer::timeout, this, &PrismExternalUpdater::autoCheckTimerFired);
 }
 
-void PrismExternalUpdater::autoCheckTimerFired() const
+void PrismExternalUpdater::autoCheckTimerFired()
 {
     qDebug() << "Auto update Timer fired";
     checkForUpdates(false);
