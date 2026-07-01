@@ -1187,7 +1187,10 @@ int PrismUpdaterApp::parseReleasePage(const QByteArray* response)
             release.draft = Json::requireBoolean(release_obj, "draft");
             release.prerelease = Json::requireBoolean(release_obj, "prerelease");
             release.body = release_obj["body"].toString();
-            release.version = Version(release.tag_name);
+            auto tag = release.tag_name;
+            if (tag.startsWith('v'))
+                tag = tag.mid(1);
+            release.version = Version(tag);
 
             auto release_assets_obj = Json::requireArray(release_obj, "assets");
             for (auto asset_json : release_assets_obj) {
