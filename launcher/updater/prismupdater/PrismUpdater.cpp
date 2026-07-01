@@ -321,6 +321,8 @@ PrismUpdaterApp::PrismUpdaterApp(int& argc, char** argv) : QApplication(argc, ar
     m_printOnly = parser.isSet("list");
     auto user_version = parser.value("install-version");
     if (!user_version.isEmpty()) {
+        if (user_version.startsWith('v'))
+            user_version = user_version.mid(1);
         m_userSelectedVersion = Version(user_version);
     }
     m_selectUI = parser.isSet("select-ui");
